@@ -1210,4 +1210,30 @@ describe Blather::Stream::Client do
       end
     end
   end
+
+  it 'tries to authenticate before registering, even if it encounters register first' do
+    FEATURES = <<~S
+    <stream:features xmlns:stream="http://etherx.jabber.org/streams">
+      <register xmlns="http://jabber.org/features/iq-register"/>
+      <mechanisms xmlns="urn:ietf:params:xml:ns:xmpp-sasl">
+        <mechanism>PLAIN</mechanism>
+      </mechanisms>
+    </stream:features>
+    S
+
+    state = nil
+
+    mocked_server(2) do |val, server|
+      case state
+      when nil
+        state = :features_sent
+        server.send_data "<?xml version='1.0'?><stream:stream xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'>"
+        server.send_data FEATURES
+        expect(val).to match(/stream:stream/)
+      when :features_sent
+        EM.stop
+        expect(val).to match(/mechanism="PLAIN"/)
+      end
+    end
+  end
 end
