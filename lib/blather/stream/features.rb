@@ -38,6 +38,15 @@ class Stream
         bind.after session
       end
 
+      register = feature?(:register)
+      mechanisms = feature?(:mechanisms)
+      register_index = @features.children.index(register)
+      mechanisms_index = @features.children.index(mechanisms)
+
+      if register_index && mechanisms_index && register_index < mechanisms_index
+        register.before mechanisms
+      end
+
       @idx = @idx ? @idx+1 : 0
       if stanza = @features.children[@idx]
         if stanza.namespaces['xmlns'] && (klass = self.class.from_namespace(stanza.namespaces['xmlns']))
